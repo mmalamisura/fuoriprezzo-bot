@@ -1,8 +1,12 @@
 name: fuoriprezzo-bot
 on:
   schedule:
-    - cron: '0 7,11,17,20 * * *'  # 4 volte al giorno: 9,13,19,22 italiane
+    - cron: '0 7 * * *'
+    - cron: '0 11 * * *'
+    - cron: '0 17 * * *'
+    - cron: '0 20 * * *'
   workflow_dispatch:
+
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -11,7 +15,9 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      - run: pip install requests beautifulsoup4
-      - run: python main.py
+      - name: Installa dipendenze
+        run: pip install requests beautifulsoup4 lxml
+      - name: Lancia bot
+        run: python main.py
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
