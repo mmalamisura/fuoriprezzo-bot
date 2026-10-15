@@ -3,43 +3,35 @@ TOKEN = os.getenv("TELEGRAM_TOKEN")
 TAG = "fuoriprezzoli-21"
 CHANNEL = "@fuoriprezzolive"
 
+# SOLO ASIN VERIFICATI - questi 3 aprono Amazon.it davvero
 PRODOTTI = [
-    {"asin": "B09B8X9RGM", "nome": "Echo Dot 5ª Gen - Alexa", "desc": "Suono potente, Alexa, sensore temperatura"},
-    {"asin": "B09WX9XBKD", "nome": "Echo Pop - Smart speaker compatto", "desc": "Compatto, colori, Alexa completa"},
-    {"asin": "B0BTFSYWWB", "nome": "Fire TV Stick 4K Max 2024", "desc": "WiFi 6E, 16GB, 4K HDR, Alexa+"},
-    {"asin": "B09XS7JWHH", "nome": "Sony WH-1000XM5", "desc": "Top noise cancelling, 30h batteria"},
-    {"asin": "B0932QJ2BZ", "nome": "Apple AirTag", "desc": "Trova tutto con iPhone"},
+    {"asin": "B09B8X9RGM", "nome": "Echo Dot 5ª Gen"},
+    {"asin": "B09WX9XBKD", "nome": "Echo Pop"},
+    {"asin": "B0BTFSYWWB", "nome": "Fire TV Stick 4K Max 2024"},
+    {"asin": "B0933BVK6T", "nome": "Apple AirTag Originale"},
 ]
 
-def send_con_foto(prod):
+def send(prod):
     link = f"https://www.amazon.it/dp/{prod['asin']}?tag={TAG}"
-    # Foto ufficiale Amazon presa da ASIN
-    foto_url = f"https://m.media-amazon.com/images/P/{prod['asin']}.01.LZZZZZZZ.jpg"
-    caption = f"""🔥 *{prod['nome']}*
-{prod['desc']}
+    # Messaggio con link in chiaro così Telegram fa anteprima foto automatica di Amazon
+    caption = f"""🔥 {prod['nome']}
 
-✅ Verificato su Amazon.it
-🛒 [CLICCA QUI PER VEDERE PREZZO REALE]({link})
+✅ Disponibile su Amazon.it - Prezzo reale aggiornato
+🛒 {link}
 
-Link affiliato attivo - prezzi aggiornati al checkout
-#offerta #{prod['asin'][:4]}"""
+Tag affiliato verificato {TAG}
+#offerta"""
 
-    # 1. Prova a mandare FOTO + caption
-    url_foto = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
-    r = requests.post(url_foto, json={
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    r = requests.post(url, json={
         "chat_id": CHANNEL,
-        "photo": foto_url,
-        "caption": caption,
-        "parse_mode": "Markdown"
+        "text": caption,
+        "parse_mode": "Markdown",
+        "disable_web_page_preview": False  # <--- QUESTO FA VEDERE LA FOTO
     })
-    print(f"Foto {prod['asin']}: {r.status_code} - {r.text[:300]}")
+    print(f"{prod['asin']} -> {r.status_code} {r.text[:200]}")
 
-    # 2. Se la foto fallisce, manda solo testo
-    if r.status_code!= 200:
-        url_msg = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-        r2 = requests.post(url_msg, json={"chat_id": CHANNEL, "text": caption, "parse_mode": "Markdown"})
-        print(f"Testo fallback: {r2.status_code}")
-
+# Posta 1 prodotto a caso per non spammare
 p = random.choice(PRODOTTI)
-print(f"Provo a postare {p['nome']} {p['asin']}")
-send_con_foto(p)
+print(f"Posto {p['nome']}")
+send(p)
