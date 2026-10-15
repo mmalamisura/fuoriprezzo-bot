@@ -1,7 +1,7 @@
 name: fuoriprezzo-bot
 on:
   schedule:
-    - cron: '0 9,18 * * *'
+    - cron: '0 7,11,17,20 * * *'  # 4 volte al giorno: 9,13,19,22 italiane
   workflow_dispatch:
 jobs:
   run:
