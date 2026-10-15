@@ -6,55 +6,57 @@ TAG = "fuoriprezzoli-21"
 CHANNEL = "@fuoriprezzolive"
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    "Accept-Language": "it-IT,it;q=0.9"
+    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15",
+    "Accept-Language": "it-IT,it;q=0.9",
+    "Accept": "text/html,application/xhtml+xml"
 }
 
 PRODOTTI = [
     {"asin": "B09B8V1LZ3", "nome": "Echo Dot 5a gen", "idealo": 64.90},
     {"asin": "B0BP9SNVH6", "nome": "Fire TV Stick 4K", "idealo": 69.99},
     {"asin": "B0C7N5R6R6", "nome": "Echo Pop", "idealo": 39.99},
-    {"asin": "B09XS7JWHH", "nome": "Sony WH-1000XM5", "idealo": 299.00},
-    {"asin": "B0CHX2F5QT", "nome": "Apple AirTag", "idealo": 39.00},
 ]
 
 def get_price(asin):
+    # Metodo 1: via proxy gratuito per evitare blocco Amazon
     try:
-        url = f"https://www.amazon.it/dp/{asin}"
-        r = requests.get(url, headers=HEADERS, timeout=15)
+        amazon_url = f"https://www.amazon.it/dp/{asin}"
+        proxy_url = f"https://api.allorigins.win/raw?url={amazon_url}"
+        r = requests.get(proxy_url, headers=HEADERS, timeout=20)
         soup = BeautifulSoup(r.text, "html.parser")
-        for sel in ["#corePriceDisplay_desktop_feature_div .a-price .a-offscreen", ".a-price .a-offscreen"]:
-            el = soup.select_one(sel)
-            if el:
-                m = re.search(r"(\d+[,\.]\d+)", el.get_text())
-                if m:
-                    return float(m.group(1).replace(",","."))
-        m = re.search(r"€\s*(\d+,\d+)", soup.get_text())
-        if m:
-            return float(m.group(1).replace(",","."))
+        text = soup.get_text()
+        # cerca € xx,xx
+        matches = re.findall(r"€\s*(\d+[,\.]\d+)", text)
+        for m in matches:
+            val = float(m.replace(",","."))
+            if 10 < val < 1000:  # prezzo plausibile
+                return val
     except Exception as e:
-        print(f"Errore {asin}: {e}")
+        print(f"Errore proxy {asin}: {e}")
     return None
 
 def send(msg):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    requests.post(url, json={"chat_id": CHANNEL, "text": msg, "parse_mode": "Markdown", "disable_web_page_preview": False})
+    requests.post(url, json={"chat_id": CHANNEL, "text": msg, "parse_mode": "Markdown"})
 
-random.shuffle(PRODOTTI)
+# TEST FORZATO - posta comunque il prezzo vero per vedere se funziona
 for p in PRODOTTI:
-    time.sleep(2)
+    time.sleep(1)
     prezzo = get_price(p["asin"])
     print(f"Check {p['nome']}: Amazon {prezzo} vs Idealo {p['idealo']}")
-    if prezzo and prezzo < p["idealo"] * 0.75:
-        sconto = int(100 - (prezzo*100/p["idealo"]))
+    if prezzo:
         link = f"https://www.amazon.it/dp/{p['asin']}?tag={TAG}"
-        msg = f"""💎 *FUORI PREZZO LIVE* -{sconto}%
+        msg = f"""🧪 *TEST BOT VERO* 
 
 🎧 *{p['nome']}*
-💰 Amazon: *{prezzo:.2f}€* invece di {p['idealo']:.2f}€
+💰 Prezzo VERO letto ora: *{prezzo}€*
+(Idealo media: {p['idealo']}€)
 
-👉 [COMPRA SU AMAZON]({link})"""
+👉 [VAI SU AMAZON]({link})
+
+Se vedi questo, il bot funziona e non inventa più 42€"""
         send(msg)
+        print("POSTATO TEST!")
         break
 else:
-    print("Nessun fuori prezzo reale oggi - non posto")
+    print("Ancora bloccato - riprovo")
